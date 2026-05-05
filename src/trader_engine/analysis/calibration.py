@@ -10,6 +10,7 @@ import numpy as np
 import polars as pl
 from numpy.typing import NDArray
 from scipy import stats
+from statsmodels.stats.proportion import proportion_confint
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ class CalibrationAnalyzer:
             pred_mean = float(prices[mask].mean())
             actual_rate = float(actuals[mask].mean())
             # Wilson confidence interval for actual rate
-            ci = stats.proportion_confint(int(actuals[mask].sum()), n, alpha=0.05, method="wilson")
+            ci = proportion_confint(int(actuals[mask].sum()), n, alpha=0.05, method="wilson")
             result.append(
                 BinStats(
                     center=center,
