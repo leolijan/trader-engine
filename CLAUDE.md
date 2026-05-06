@@ -123,3 +123,63 @@ CONSTRAINTS:
 - If 2025 short-horizon n < 100, explicitly flag as "underpowered"
 - No live trading code
 - Commit after each major step
+
+---
+
+## PHASE 4: Cross-Category Market Efficiency Analysis (CURRENT)
+
+GOAL: Identify which Polymarket niches have exploitable inefficiencies in 2025–2026.
+Produce a professional LaTeX research report suitable for quant finance applications.
+
+CONTEXT:
+- Phase 3 confirmed sports edge (10–30% YES bins, net ~10% OOS) but only used 2024 data.
+- Phase 4 pivots to CURRENT data: late 2025 and 2026 (API fetches live/recent markets).
+- Key 2026 API discovery: tag_slug=sports includes weather and crypto — must filter carefully.
+- Sports markets now ~4,600/day (esports props, soccer spreads, O/U) via tag_slug=sports.
+
+CATEGORIES TO ANALYSE (use Polymarket category= or tag_slug= filters):
+  1. Sports — pure game outcomes: Soccer, Basketball, Esports, Tennis, Baseball, Golf
+  2. Politics — Elections, US politics, Global Politics (Trump, Congress, etc.)
+  3. Crypto/Finance — Crypto price movements, ETF, Fed rates, Commodities
+  4. AI/Tech — AI model predictions, Tech milestone markets
+  5. Pop Culture — Film & TV, Celebrities, Music
+  6. Climate & Weather — temperature/rainfall specific-value markets
+  7. Science/Space — scientific milestone markets
+
+DATA REQUIREMENTS (per category):
+  - Focus period: 2025-10-01 to 2026-05-06 (last ~7 months)
+  - Min volume: $500 per market (real price discovery)
+  - Binary markets only (2 outcomes, cleanly resolved)
+  - Duration: 1–30 days (exclude >30d long-horizon markets)
+  - T-1 price from CLOB price history (fidelity=60 first, then 1)
+  - Min 100 markets per category for inference; flag <50 as underpowered
+
+FETCH STRATEGY (pagination problem):
+  - Categories with few markets (AI, Science, Chess): paginate back to 2025-10-01
+  - High-volume categories (Sports): use volumeNum_min=1000 or random sample 2000
+  - Save each category to data/cache/phase4_{category}.parquet
+  - Deduplicate by condition_id
+
+ANALYSIS PER CATEGORY:
+  - Brier score + 95% bootstrap CI (N=3000)
+  - Hosmer-Lemeshow χ² test
+  - Bin-level calibration table (10 bins, 0–100%)
+  - Wilson CIs on actual YES rate per bin
+  - Net edge = |pred - actual| - 2% spread
+  - Kelly half-fraction and EV/month at $10k bankroll
+
+LATEX REPORT: research/reports/04_cross_category_efficiency.tex
+  - Professional format: 12pt article, booktabs tables, reliability diagram figures
+  - Abstract, Introduction, Methodology, Results (per category), Summary table, Conclusion
+  - Mathematical notation for Brier, HL, Kelly
+  - Every number from data — NO invented statistics
+  - Tone: SIG/Jane Street internal research memo — precise, rigorous, honest about limitations
+  - Include: "which niche to trade" recommendation with supporting evidence
+
+CONSTRAINTS:
+  - Pure research, no live trading code
+  - Use polars for data, numpy/scipy for stats
+  - Every claim backed by numbers from the actual fetch
+  - Flag underpowered categories clearly (n < 100)
+  - Commit data fetch, analysis script, and LaTeX separately
+  - The sports result from Phase 3 (2024 data) feeds into context — Phase 4 uses 2026 data
