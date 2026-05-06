@@ -74,3 +74,52 @@ CONSTRAINTS:
 - If data is insufficient for a conclusion, SAY SO.
 
 When done, summarize findings and propose Phase 3 based on what you found.
+
+---
+
+## PHASE 3: Duration-Controlled OOS Test (CURRENT)
+
+GOAL: Get a valid out-of-sample test by comparing like-for-like market types.
+Phase 2 failed because train=short-horizon (5.9d) vs test=long-horizon (185d).
+Fix: filter BOTH periods to short-horizon sports markets (duration 1–14 days).
+
+PHASE 3 TASKS (do all autonomously):
+
+1. Duration-stratified reanalysis
+   - Filter sports_markets.parquet to duration_days <= 14
+   - Check: how many 2024 vs 2025 short-horizon markets have T-1 price data?
+   - If 2025 short-horizon is too sparse (<100 markets): fetch more via direct
+     market API (not events API) using date filters on closedTime for 2025
+
+2. If 2025 data is insufficient — targeted refetch
+   - Use gamma-api.polymarket.com/markets?closed=true&category=Sports
+     with date range filters to get markets closing in Jan–Apr 2025
+   - Filter to duration <= 14 days after fetching
+   - Merge with existing cache (deduplicate by condition_id)
+
+3. Run proper OOS calibration analysis
+   - Train: 2024 short-horizon sports (duration 1–14 days)
+   - Test: 2025 short-horizon sports (duration 1–14 days)
+   - Same CalibrationAnalyzer as before: Brier, HL test, bin-level edge
+   - Report BOTH periods with 95% bootstrap CIs
+
+4. Bin-level persistence test
+   - For each bin (5–10%, 10–15%, ..., 25–30%): does the edge direction persist?
+   - A bin where train shows -15pp miscal should also show negative in test
+   - Count: how many bins show same sign in both periods?
+
+5. If edge persists OOS:
+   - Kelly sizing with actual median spread (2% confirmed)
+   - Estimated trades/month at current Polymarket sports volume
+   - Expected monthly P&L at $10k bankroll (half-Kelly)
+
+6. Write research/reports/03_oos_validation.md
+   - This is the definitive verdict on whether the edge is real
+   - If OOS edge confirmed: "YES, proceed to live monitoring"
+   - If OOS edge absent: "NO tradeable edge found, stop here"
+
+CONSTRAINTS:
+- Duration filter is STRICT: <= 14 days only, both periods
+- If 2025 short-horizon n < 100, explicitly flag as "underpowered"
+- No live trading code
+- Commit after each major step
